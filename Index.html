@@ -1,53 +1,33 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=720, initial-scale=1.0">
-  <title>Next Level Promo</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400" rel="stylesheet">
-</head>
-<body>
-  <div class="header-blanc">
-    <div class="logo">
-      <img src="logo.png" alt="Logo Next Level Promo">
-    </div>
-    <h1>Next Level Promo</h1>
-    <div class="desc">
-      Next Level Promo offre tout ce dont vous avez besoin pour booster votre présence sur les réseaux sociaux.
-    </div>
-  </div>
 
-  <div class="services">
-    <div class="card">
-      <img src="https://placehold.co/42x42?text=TikTok" alt="TikTok">
-      <h2>Monétisation de compte TikTok</h2>
-      <div class="infos">Débloquez la monétisation sur votre compte TikTok et commencez à gagner de l’argent.</div>
-      <button>Demander</button>
-    </div>
-    <div class="card">
-      <img src="https://placehold.co/42x42?text=Facebook" alt="Facebook">
-      <h2>Monétisation de compte Facebook</h2>
-      <div class="infos">Activez la monétisation sur Facebook et profitez de revenus supplémentaires.</div>
-      <button>Demander</button>
-    </div>
-    <div class="card">
-      <img src="https://placehold.co/42x42?text=Multi" alt="Abonnés">
-      <h2>Augmenter vues & abonnés</h2>
-      <div class="infos">Boostez vos vues et vos abonnés sur YouTube, Instagram, TikTok, etc.</div>
-      <button>Demander</button>
-    </div>
-  </div>
+require('dotenv').config();
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
 
-  <div class="assistance">
-    <div class="assistance-title">Assistance</div>
-    <a class="assist-btn" href="https://wa.me/18292681149" target="_blank">
-      Contacter l’Assistance via WhatsApp
-    </a>
-  </div>
+async function start() {
+  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys');
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: true // QR code ap parèt nan console
+  });
 
-  <div class="footer">
-    &copy; 2025 Next Level Promo. Tous droits réservés.
-  </div>
-</body>
-</html>
+  sock.ev.on('creds.update', saveCreds);
+
+  sock.ev.on('connection.update', (update) => {
+    const { connection, lastDisconnect } = update;
+    if(connection === 'close') {
+      if((lastDisconnect.error)?.output?.statusCode !== DisconnectReason.loggedOut) {
+        start();
+      }
+    } else if(connection === 'open') {
+      console.log('✅ Gang Bot Connected!');
+    }
+  });
+
+  sock.ev.on('messages.upsert', async m => {
+    const msg = m.messages[0];
+    if(!msg.key.fromMe && msg.message?.conversation?.startsWith(process.env.PREFIX)) {
+      await sock.sendMessage(msg.key.remoteJid, { text: "Gang bot la la, bro!" });
+    }
+  });
+}
+
+start();
